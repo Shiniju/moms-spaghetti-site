@@ -1,0 +1,226 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mom's Spaghetti</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap" rel="stylesheet" />
+
+  <style>
+    body {
+      text-align: center;
+      background: radial-gradient(circle, #FFFFFF, #87CEEB);
+      font-family: 'Rock Salt', cursive;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #buttons {
+      margin: 20px;
+    }
+
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      margin: 5px;
+      cursor: pointer;
+      border-radius: 15px;
+      border: none;
+      font-family: 'Rock Salt', cursive;
+    }
+
+    #pasta-button { background-color: #FFD700; }
+    #sauce-button { background-color: #D12D2D; color: white; }
+    #rainbow-button {
+      background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+      color: white;
+    }
+
+    #spaghetti-container {
+      position: relative;
+      width: 900px;
+      height: 700px;
+      margin: 0 auto 50px auto;
+      border: 2px solid black;
+      background-color: white;
+    }
+
+    #logo {
+      width: 150px;
+      margin-bottom: 10px;
+    }
+
+    .floating-image {
+      position: absolute;
+      width: 250px;
+      transition: opacity 0.4s ease-in-out;
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>🍝 Mom's Spaghetti 🍝</h1>
+  <img id="logo" src="https://upload.wikimedia.org/wikipedia/en/5/56/Mom%27s_Spaghetti_restaurant_logo.png" alt="Mom's Spaghetti Logo" />
+
+  <div id="buttons">
+    <button id="pasta-button">🍝 Pasta Mode</button>
+    <button id="sauce-button">🍅 Sauce Mode</button>
+    <button id="rainbow-button">🌈 Rainbow Mode</button>
+  </div>
+
+  <div id="spaghetti-container"></div>
+
+  <img id="img1" class="floating-image" src="location.png" />
+  <img id="img2" class="floating-image" src="ment.png" />
+  <img id="img3" class="floating-image" src="tel.png" />
+
+  <audio id="background-music" autoplay loop>
+    <source src="Eminem - Moms Spaghetti (Music Video).mp3" type="audio/mpeg" />
+    Your browser does not support the audio element.
+  </audio>
+
+  <script>
+    const { Engine, Render, Runner, Bodies, World, Mouse, MouseConstraint, Constraint, Body } = Matter;
+
+    const engine = Engine.create();
+    const world = engine.world;
+    const container = document.getElementById("spaghetti-container");
+
+    const render = Render.create({
+      element: container,
+      engine: engine,
+      options: {
+        width: 900,
+        height: 700,
+        wireframes: false,
+        background: "white"
+      }
+    });
+
+    Render.run(render);
+    Runner.run(Runner.create(), engine);
+
+    const ground = Bodies.rectangle(450, 690, 900, 20, { isStatic: true, render: { fillStyle: "black" } });
+    World.add(world, ground);
+
+    let mode = "pasta";
+
+    document.getElementById("pasta-button").addEventListener("click", () => {
+    mode = "pasta";
+    document.getElementById("background-music").playbackRate = 1.0;
+});
+    document.getElementById("sauce-button").addEventListener("click", () => {
+    mode = "sauce";
+    document.getElementById("background-music").playbackRate = 1.0;
+});
+    document.getElementById("rainbow-button").addEventListener("click", () => {
+    mode = "rainbow";
+    document.getElementById("background-music").playbackRate = 2.0;
+});
+
+    function getRandomColor() {
+      const colors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function createLongSpaghetti(x, y) {
+      const segments = [];
+      let prev = null;
+      for (let i = 0; i < 20; i++) {
+        const segmentColor = (mode === "rainbow") ? getRandomColor() : "#f7e600";
+        const segment = Bodies.rectangle(x, y + i * 20, 12, 20, {
+          density: 0.005,
+          friction: 0.5,
+          restitution: 0.2,
+          render: { fillStyle: segmentColor }
+        });
+        segments.push(segment);
+        if (prev) {
+          World.add(world, Constraint.create({ bodyA: prev, bodyB: segment, stiffness: 0.9, length: 5 }));
+        }
+        prev = segment;
+      }
+      Body.setAngularVelocity(segments[0], Math.random() * 0.1 - 0.05);
+      World.add(world, segments);
+    }
+
+    function createTomatoSauce(x, y) {
+      const sauceColor = (mode === "rainbow") ? getRandomColor() : "#d12d2d";
+      for (let i = 0; i < 5; i++) {
+        const offsetX = (Math.random() - 0.5) * 10;
+        const offsetY = (Math.random() - 0.5) * 10;
+        const sauce = Bodies.circle(x + offsetX, y + offsetY, 8, {
+          density: 0.002,
+          friction: 0.3,
+          restitution: 0.4,
+          render: { fillStyle: sauceColor }
+        });
+        World.add(world, sauce);
+      }
+    }
+
+    const mouse = Mouse.create(render.canvas);
+    const mouseConstraint = MouseConstraint.create(engine, {
+      mouse: mouse,
+      constraint: { stiffness: 0.2, render: { visible: false } }
+    });
+    World.add(world, mouseConstraint);
+
+    document.addEventListener("mousedown", (event) => {
+      const rect = container.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      if (mode === "pasta" || mode === "rainbow") createLongSpaghetti(x, y);
+    });
+
+    document.addEventListener("mousemove", (event) => {
+      if ((mode === "sauce" || mode === "rainbow") && event.buttons === 1) {
+        const rect = container.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        createTomatoSauce(x, y);
+      }
+    });
+
+    const floatingImages = [
+      document.getElementById("img1"),
+      document.getElementById("img2"),
+      document.getElementById("img3")
+    ];
+
+    function showRandomFloatingImage() {
+      const img = floatingImages[Math.floor(Math.random() * floatingImages.length)];
+      const maxX = window.innerWidth - 250;
+      const maxY = window.innerHeight - 250;
+      img.style.left = Math.random() * maxX + "px";
+      img.style.top = Math.random() * maxY + "px";
+      img.style.opacity = 1;
+      setTimeout(() => { img.style.opacity = 0; }, 800);
+    }
+
+    setInterval(showRandomFloatingImage, 1000);
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const audio = document.getElementById("background-music");
+      document.body.addEventListener("click", () => {
+        if (audio.paused) {
+          audio.play().catch(err => console.log("Autoplay blocked:", err));
+        }
+      });
+    });
+  </script>
+
+<img src="에미넴-removebg-preview.png" style="position: absolute; left: 20px; bottom: 20px; height: 400px; z-index: 10;" alt="Left Image">
+<img src="스파게티.png" style="position: absolute; right: 20px; bottom: 20px; height: 300px; z-index: 10;" alt="Right Image">
+
+</body>
+</html>
