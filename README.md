@@ -1,4 +1,4 @@
-# Promptai PRO Studio
+# image-prompter
 
 React + Vite로 만든 이미지 생성 프롬프트 스튜디오입니다.
 
